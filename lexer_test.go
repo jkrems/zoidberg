@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func verifyToken(t *testing.T, source string, verifier func(tok token) bool) {
-	_, tokens := Tokenize("testfile.berg", source)
+	tokens := Tokenize("testfile.berg", source)
 
 	found := false
 	for tok := range tokens {

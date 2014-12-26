@@ -204,12 +204,12 @@ func (l *lexer) run() {
 	close(l.tokens)
 }
 
-func Tokenize(filename string, source string) (*lexer, chan token) {
+func Tokenize(filename string, source string) chan token {
 	l := &lexer{
 		filename: filename,
 		source:   source,
 		tokens:   make(chan token),
 	}
 	go l.run()
-	return l, l.tokens
+	return l.tokens
 }
