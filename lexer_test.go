@@ -66,13 +66,27 @@ func TestTokenizeIdentifier(t *testing.T) {
 }
 
 func TestTokenizeOperators(t *testing.T) {
-	verifyTokenValue(t, "4 +5", tokenBinaryOp, "+")
+	verifyTokenValue(t, "4 +5", tokenBinaryOrUnaryOp, "+")
 	verifyTokenValue(t, "x = 14", tokenAssign, "=")
 	verifyTokenValue(t, "x == 14", tokenBinaryOp, "==")
-	verifyTokenValue(t, "x + &14", tokenBinaryOrUnaryOp, "&")
+	verifyTokenValue(t, "x / &14", tokenBinaryOrUnaryOp, "&")
 	verifyTokenValue(t, "x && 14", tokenBinaryOp, "&&")
 	verifyTokenValue(t, "x && !y", tokenUnaryOp, "!")
 	verifyTokenValue(t, "x ** !y", tokenBinaryOp, "**")
 	verifyTokenValue(t, "*y", tokenBinaryOrUnaryOp, "*")
 	verifyTokenValue(t, "a ++ b", tokenBinaryOp, "++")
+}
+
+func TestTokenizeDeclare(t *testing.T) {
+	verifyTokenValue(t, "val x = 10", tokenDeclare, "val")
+	verifyTokenValue(t, "var z = \"foo\"", tokenDeclare, "var")
+}
+
+func TestTokenizeBrackets(t *testing.T) {
+	verifyTokenValue(t, "(", tokenLParen, "(")
+	verifyTokenValue(t, ")", tokenRParen, ")")
+	verifyTokenValue(t, "[", tokenLSquare, "[")
+	verifyTokenValue(t, "]", tokenRSquare, "]")
+	verifyTokenValue(t, "{", tokenLCurly, "{")
+	verifyTokenValue(t, "}", tokenRCurly, "}")
 }

@@ -17,6 +17,13 @@ const (
 	tokenBinaryOrUnaryOp
 	tokenUnaryOp
 	tokenAssign
+	tokenDeclare
+	tokenLParen
+	tokenRParen
+	tokenLSquare
+	tokenRSquare
+	tokenLCurly
+	tokenRCurly
 )
 const eof = -1
 
@@ -35,6 +42,17 @@ type lexer struct {
 }
 
 type stateFn func(l *lexer) stateFn
+
+var simpleTokens = map[rune]tokenType{
+	'(': tokenLParen,
+	')': tokenRParen,
+	'[': tokenLSquare,
+	']': tokenRSquare,
+	'{': tokenLCurly,
+	'}': tokenRCurly,
+	'-': tokenBinaryOrUnaryOp,
+	'/': tokenBinaryOp,
+}
 
 func lexNumber(l *lexer) stateFn {
 	digits := "0123456789"
@@ -76,7 +94,12 @@ func lexIdentifier(l *lexer) stateFn {
 	for isIdentifierPart(l.next()) {
 	}
 	l.backup()
-	l.emit(tokenIdentifier)
+	switch id := l.current(); {
+	case id == "val" || id == "var":
+		l.emit(tokenDeclare)
+	default:
+		l.emit(tokenIdentifier)
+	}
 	return lexRoot
 }
 
@@ -106,28 +129,28 @@ func lexRoot(l *lexer) stateFn {
 			return lexIdentifier
 		case r == '-' || r == '/':
 			l.emit(tokenBinaryOp)
-			return lexRoot
 		case r == '+':
-			repeatOperator(l, r, tokenBinaryOp, tokenBinaryOp)
-			return lexRoot
+			repeatOperator(l, r, tokenBinaryOrUnaryOp, tokenBinaryOp)
 		case r == '=':
 			repeatOperator(l, r, tokenAssign, tokenBinaryOp)
-			return lexRoot
 		case r == '&':
 			repeatOperator(l, r, tokenBinaryOrUnaryOp, tokenBinaryOp)
-			return lexRoot
 		case r == '|':
 			repeatOperator(l, r, tokenBinaryOp, tokenBinaryOp)
-			return lexRoot
 		case r == '!':
 			l.emit(tokenUnaryOp)
-			return lexRoot
 		case r == '*':
 			repeatOperator(l, r, tokenBinaryOrUnaryOp, tokenBinaryOp)
-			return lexRoot
 		case '0' <= r && r <= '9':
 			l.backup()
 			return lexNumber
+		default:
+			typ, ok := simpleTokens[r]
+			if !ok {
+				panic("Unexpected character")
+				return nil
+			}
+			l.emit(typ)
 		}
 	}
 	panic("Should never be reached")
@@ -136,6 +159,10 @@ func lexRoot(l *lexer) stateFn {
 func (l *lexer) emit(typ tokenType) {
 	l.tokens <- token{typ, l.source[l.start:l.pos]}
 	l.start = l.pos
+}
+
+func (l *lexer) current() string {
+	return l.source[l.start:l.pos]
 }
 
 func (l *lexer) next() (rune rune) {

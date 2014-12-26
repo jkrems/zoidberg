@@ -3,6 +3,9 @@ package main
 import "fmt"
 
 func main() {
-	_, tokens := Tokenize("num.berg", "42")
-	fmt.Println("Tokens:", tokens)
+	_, tokens := Tokenize("num.berg", "val a = 42\nf(x) { return x + a }")
+	fmt.Println("Tokens:")
+	for tok := range tokens {
+		fmt.Printf("- %q\n", tok)
+	}
 }
