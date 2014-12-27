@@ -90,3 +90,7 @@ func TestTokenizeBrackets(t *testing.T) {
 	verifyTokenValue(t, "{", tokenLCurly, "{")
 	verifyTokenValue(t, "}", tokenRCurly, "}")
 }
+
+func TestTokenizeArrow(t *testing.T) {
+	verifyTokenValue(t, "x => x * 2", tokenArrow, "=>")
+}

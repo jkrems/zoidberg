@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"unicode/utf8"
 )
@@ -10,6 +11,7 @@ type tokenType int
 const (
 	tokenError tokenType = iota
 	tokenEOF
+	tokenEOL
 	tokenNumber
 	tokenString
 	tokenIdentifier
@@ -24,6 +26,10 @@ const (
 	tokenRSquare
 	tokenLCurly
 	tokenRCurly
+	tokenSeq      // ,
+	tokenMember   // .
+	tokenIndirect // ->
+	tokenArrow    // =>
 )
 const eof = -1
 
@@ -52,6 +58,55 @@ var simpleTokens = map[rune]tokenType{
 	'}': tokenRCurly,
 	'-': tokenBinaryOrUnaryOp,
 	'/': tokenBinaryOp,
+	';': tokenEOL,
+	',': tokenSeq,
+	'.': tokenMember,
+}
+
+func (typ tokenType) String() string {
+	switch typ {
+	case tokenEOF:
+		return "EOF"
+	case tokenEOL:
+		return "EOL"
+	case tokenNumber:
+		return "Number"
+	case tokenString:
+		return "String"
+	case tokenIdentifier:
+		return "Identifier"
+	case tokenBinaryOp:
+		return "BinaryOp"
+	case tokenBinaryOrUnaryOp:
+		return "BinaryOrUnaryOp"
+	case tokenUnaryOp:
+		return "UnaryOp"
+	case tokenAssign:
+		return "<< = >>"
+	case tokenDeclare:
+		return "Declare"
+	case tokenLParen:
+		return "<< ( >>"
+	case tokenRParen:
+		return "<< ) >>"
+	case tokenLSquare:
+		return "<< [ >>"
+	case tokenRSquare:
+		return "<< ] >>"
+	case tokenLCurly:
+		return "<< { >>"
+	case tokenRCurly:
+		return "<< } >>"
+	case tokenSeq:
+		return "<< , >>"
+	case tokenMember:
+		return "<< . >>"
+	case tokenIndirect:
+		return "<< -> >>"
+	case tokenArrow:
+		return "<< => >>"
+	}
+	return fmt.Sprintf("?<<%d>>", typ)
 }
 
 func lexNumber(l *lexer) stateFn {
@@ -132,7 +187,15 @@ func lexRoot(l *lexer) stateFn {
 		case r == '+':
 			repeatOperator(l, r, tokenBinaryOrUnaryOp, tokenBinaryOp)
 		case r == '=':
-			repeatOperator(l, r, tokenAssign, tokenBinaryOp)
+			switch peek := l.next(); {
+			case peek == '=':
+				l.emit(tokenBinaryOp)
+			case peek == '>':
+				l.emit(tokenArrow)
+			default:
+				l.backup()
+				l.emit(tokenAssign)
+			}
 		case r == '&':
 			repeatOperator(l, r, tokenBinaryOrUnaryOp, tokenBinaryOp)
 		case r == '|':
@@ -147,7 +210,7 @@ func lexRoot(l *lexer) stateFn {
 		default:
 			typ, ok := simpleTokens[r]
 			if !ok {
-				panic("Unexpected character")
+				panic(fmt.Sprintf("Unexpected character: %s", string(r)))
 				return nil
 			}
 			l.emit(typ)
